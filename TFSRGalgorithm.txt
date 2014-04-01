@@ -1,0 +1,46 @@
+Find the first vector mathematically
+
+Randomly generate a vector with 162 vertices, 21 of those spots must be ones
+	-We know that there can't be a 0 or 1 somewhere - ask Athula about which spot we know there won't be a 1 or 0 so we can not randomly generate the wrong number in those spots
+
+Dot product your (x) vectors to create an (x) by (x) matrix
+
+Check to see if this (x) by (x) matrix matches the first (x) by (x) matrix of the vectors 
+	
+		-Example: 3 vectors means a 3 by 3 matrix.  Check the first, second, and third values of each of your 3 vectors to match
+
+		-If it does, add the row to the list of accepted vectors
+
+			-If a maximal set of rows has been found, print out the vectors to a text file and stop the program
+
+				-If it doesn't make a maximal set of rows, start from the beginning
+
+		-If it doesn't, reject the row and start over
+
+
+//generate a list of 162 vertices; 21 ones and 141 zeros
+//RETURNS
+	List: List of 162 random 0's and 1's
+//NO PARAMETERS
+generateRandomRow()
+{
+	
+}
+
+//dot product all the rows passed into it
+//RETURNS 
+	2D List - (x) by (x) matrix of values resulting from dot product
+//PARAMETERS:
+	2D List
+
+//Checks new random row against known list of rows; adds it if it works, rejects it if it doesn't
+//This will be the recursive function
+//RETURNS Void; will write to text file upon completion of maximal set of rows, and will periodically write
+//PARAMETERS: 
+	List - List of correct rows
+
+buildRowList()
+{
+	
+}
+

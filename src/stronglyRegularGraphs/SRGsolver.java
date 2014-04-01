@@ -1,3 +1,11 @@
+package stronglyRegularGraphs;
+
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
 /**
  * The purpose of the TFSRGsolver class is to build the adjacency matrix of a Triangle Free Strongly Regular Graph of (x) number of vertices.
  * This is accomplished by randomly generating a row of (x) numbers.  Of these (x) numbers, there must be only as many one's as the degree of 
@@ -19,28 +27,15 @@
  * @author Tyler Wilcock
  */
 
-package stronglyRegularGraphs;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+/*
+ * Test cases to write:
+ * 		Make sure inner and outer current rows are the same size; in dotProduct method
+ */
 
 public class SRGsolver 
 {
 	private int numOfVertices, degree, lambdaValue, muValue;
 	private boolean maximalRowSetFound = false;
-
-	public static void main(String[] args) 
-	{
-		List< List<Integer> > currentRowSet = new ArrayList<>();
-		
-		SRGsolver SRGsolver = new SRGsolver(6, 3, 0, 1);
-		currentRowSet.add(Arrays.asList(1, 0, 1, 1, 0, 0));
-		currentRowSet.add(Arrays.asList(0, 0, 1, 1, 1, 0));
-		currentRowSet.add(Arrays.asList(1, 0, 1, 0, 1, 0)); 
-		SRGsolver.dotProduct(currentRowSet);
-	}//end main
 	
 	/**
 	 * Initializes the class variables containing the number of vertices, the degree value, the lambda value, and the mu value.
@@ -74,35 +69,72 @@ public class SRGsolver
 //		{
 //			currentRow
 //		}
-		
+//		
+//		int matrixResult = 0;
+//		for(int i = 0; i < passedInRows.size(); i++)
+//		{
+//			List<Integer> currentRow = new ArrayList<Integer>();
+//			currentRow = passedInRows.get(i);
+//			List< List<Integer> > allMatricesExceptI = new ArrayList<>();
+//			
+//			for(int s = 0; s < passedInRows.size(); s++)
+//			{
+//				if(s != i)
+//				{
+//					allMatricesExceptI.add(passedInRows.get(s));			
+//				}
+//			}
+//			
+//			for(int g = 0; g < allMatricesExceptI.size(); g++)
+//			{
+//				for(int j = 0; j < currentRow.size(); j++)
+//				{
+//					int currentElement = currentRow.get(j);
+//					System.out.println("Element at: " + j + " is " + currentElement + "*" + currentElement + "=" + (currentElement*currentElement));
+//					matrixResult += currentElement * currentElement;	
+//				}
+//			}
+//		}
 		int matrixResult = 0;
 		for(int i = 0; i < passedInRows.size(); i++)
 		{
-			List<Integer> currentRow = new ArrayList<Integer>();
-			currentRow = passedInRows.get(i);
-			List< List<Integer> > allMatricesExceptI = new ArrayList<>();
-			
-			for(int s = 0; s < passedInRows.size(); s++)
+			List<Integer> outerCurrentRow = new ArrayList<Integer>();
+			outerCurrentRow = passedInRows.get(i);
+			List<Integer> emptyList = new ArrayList<Integer>();
+			//Every time an outerRow is processed, we want to create a new row in the returnedResults 2D list.  1 is a dummy value
+			returnedMatrix.addAll(Arrays.asList(emptyList));
+			System.out.println("END OUTER CURRENT ROW");
+			/*
+			 * The idea behind both of these for loops of the same size is that each row (outerCurrentRow) needs to be multiplied 
+			 * against every other row (innerCurrentRow) to get the proper result.
+			 */
+			for(int j = 0; j < passedInRows.size(); j++)
 			{
-				if(s != i)
+				List<Integer> innerCurrentRow = new ArrayList<Integer>();
+				innerCurrentRow = passedInRows.get(j);
+				System.out.println("END INNER CURRENT ROW");
+				matrixResult = 0;
+				//Do the math to get matrixResult, which is the variable that stores the result for the returnMatrix at a certain spot
+				for(int g = 0; g < innerCurrentRow.size(); g++)
 				{
-					allMatricesExceptI.add(passedInRows.get(s));			
+					
+					System.out.println(outerCurrentRow.get(g) + "*" + innerCurrentRow.get(g));
+					matrixResult += outerCurrentRow.get(g) * innerCurrentRow.get(g);
 				}
-			}
-			
-			for(int g = 0; g < allMatricesExceptI.size(); g++)
-			{
-				for(int j = 0; j < currentRow.size(); j++)
-				{
-					int currentElement = currentRow.get(j);
-					System.out.println("Element at: " + j + " is " + currentElement + "*" + currentElement + "=" + (currentElement*currentElement));
-					matrixResult += currentElement * currentElement;	
-				}
+				System.out.println("Matrix result = " + matrixResult);
+
+				returnedMatrix.get(i).add(matrixResult);
 			}
 		}
-		
-		System.out.println("Matrix result = " + matrixResult);
-		
+		System.out.println("\nDEBUGGGING; PRINT OUT OF VARIABLE: returnedMatrix\n");
+		for(int x = 0; x < returnedMatrix.size(); x++)
+		{
+			for(int z = 0; z < returnedMatrix.get(x).size(); z++)
+			{
+				
+				System.out.println(returnedMatrix.get(x).get(z));
+			}
+		}
 		return returnedMatrix;
 	}//end dotProduct method
 	
@@ -151,7 +183,14 @@ public class SRGsolver
 		//Base case; check to see if maximal row set has been built
 		if(maximalRowSetFound)
 		{
-			return currentRowSet;
+			FileHandler fileHandler = new FileHandler();
+			fileHandler.write("OUTPUT MATRIX FROM SRGsolver.java: ");
+			fileHandler.writeln();
+			fileHandler.write("---------------------------------------------------------");
+			fileHandler.writeln(2);
+			fileHandler.write(currentRowSet);
+			
+			return currentRowSet;	
 		}	
 		List<Integer> randomRow = new ArrayList<Integer>();
 		randomRow = generateRandomRow();
