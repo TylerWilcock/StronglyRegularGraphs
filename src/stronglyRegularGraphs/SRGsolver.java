@@ -1,6 +1,5 @@
 package stronglyRegularGraphs;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,9 +31,14 @@ import java.util.Random;
  * 		Make sure inner and outer current rows are the same size; in dotProduct method
  */
 
+/*
+ * Disallow duplicate rows.
+ */
+
 public class SRGsolver 
 {
 	private int numOfVertices, degree, lambdaValue, muValue;
+	private int foundRowCounter = 0;
 	private boolean maximalRowSetFound = false;
 	
 	/**
@@ -54,91 +58,6 @@ public class SRGsolver
 	}//end SRGsolver constructor
 	
 	/**
-	 * The dot product function takes the current row set, and then transposes it.  It then multiplies this transposed version of the row set with the non-transposed version, 
-	 * element by element.  The element by element result is modulus'd by 2 to ensure that the result is either 0 or 1.  Then, the result of these modulus operations is added 
-	 * together to get a (c) by (c) matrix.
-	 * 
-	 * @param passedInRows
-	 * @return 2D List; Returns a (c) by (c) matrix containing the results of the dot product.  
-	 */
-	public List< List<Integer> > dotProduct(List< List<Integer> > passedInRows)
-	{
-		List< List<Integer> > returnedMatrix = new ArrayList<>();
-		
-//		for(List<Integer> currentRow : passedInRows)
-//		{
-//			currentRow
-//		}
-//		
-//		int matrixResult = 0;
-//		for(int i = 0; i < passedInRows.size(); i++)
-//		{
-//			List<Integer> currentRow = new ArrayList<Integer>();
-//			currentRow = passedInRows.get(i);
-//			List< List<Integer> > allMatricesExceptI = new ArrayList<>();
-//			
-//			for(int s = 0; s < passedInRows.size(); s++)
-//			{
-//				if(s != i)
-//				{
-//					allMatricesExceptI.add(passedInRows.get(s));			
-//				}
-//			}
-//			
-//			for(int g = 0; g < allMatricesExceptI.size(); g++)
-//			{
-//				for(int j = 0; j < currentRow.size(); j++)
-//				{
-//					int currentElement = currentRow.get(j);
-//					System.out.println("Element at: " + j + " is " + currentElement + "*" + currentElement + "=" + (currentElement*currentElement));
-//					matrixResult += currentElement * currentElement;	
-//				}
-//			}
-//		}
-		int matrixResult = 0;
-		for(int i = 0; i < passedInRows.size(); i++)
-		{
-			List<Integer> outerCurrentRow = new ArrayList<Integer>();
-			outerCurrentRow = passedInRows.get(i);
-			List<Integer> emptyList = new ArrayList<Integer>();
-			//Every time an outerRow is processed, we want to create a new row in the returnedResults 2D list.  1 is a dummy value
-			returnedMatrix.addAll(Arrays.asList(emptyList));
-			System.out.println("END OUTER CURRENT ROW");
-			/*
-			 * The idea behind both of these for loops of the same size is that each row (outerCurrentRow) needs to be multiplied 
-			 * against every other row (innerCurrentRow) to get the proper result.
-			 */
-			for(int j = 0; j < passedInRows.size(); j++)
-			{
-				List<Integer> innerCurrentRow = new ArrayList<Integer>();
-				innerCurrentRow = passedInRows.get(j);
-				System.out.println("END INNER CURRENT ROW");
-				matrixResult = 0;
-				//Do the math to get matrixResult, which is the variable that stores the result for the returnMatrix at a certain spot
-				for(int g = 0; g < innerCurrentRow.size(); g++)
-				{
-					
-					System.out.println(outerCurrentRow.get(g) + "*" + innerCurrentRow.get(g));
-					matrixResult += outerCurrentRow.get(g) * innerCurrentRow.get(g);
-				}
-				System.out.println("Matrix result = " + matrixResult);
-
-				returnedMatrix.get(i).add(matrixResult);
-			}
-		}
-		System.out.println("\nDEBUGGGING; PRINT OUT OF VARIABLE: returnedMatrix\n");
-		for(int x = 0; x < returnedMatrix.size(); x++)
-		{
-			for(int z = 0; z < returnedMatrix.get(x).size(); z++)
-			{
-				
-				System.out.println(returnedMatrix.get(x).get(z));
-			}
-		}
-		return returnedMatrix;
-	}//end dotProduct method
-	
-	/**
 	 * This function generates a List object that has (degree) one's randomly placed in a row of (numOfVertices), where the other spaces are 0's. 
 	 * 
 	 * @return List Randomly generated row of 1's and 0's 
@@ -148,19 +67,28 @@ public class SRGsolver
 		List<Integer> randomRow = new ArrayList<Integer>();
 		Random rand = new Random();
 		int oneCounter = 0;
+		int onesLeft = this.degree;
 		
 		for(int i = 0; i < numOfVertices; i++)
 		{
 			int randomNumber = rand.nextInt(2);
-			if(randomNumber == 1) 
+			if(onesLeft > numOfVertices - (i + 1))
 			{
-				if(oneCounter == degree) 
+				randomNumber = 1;
+			}
+			else
+			{
+				if(randomNumber == 1) 
 				{
-					randomNumber = 0;
-				}
-				else
-				{
-					oneCounter++;
+					if(oneCounter == degree) 
+					{
+						randomNumber = 0;
+					}
+					else
+					{
+						oneCounter++;
+						onesLeft--;
+					}
 				}
 			}
 			randomRow.add(randomNumber);
@@ -170,40 +98,203 @@ public class SRGsolver
 	}//end generateRandomRow method
 	
 	/**
+	 * The dot product function takes the current row set, and returns a 2D List of the dot product.  It then multiplies this transposed version of the row set with the non-transposed version, 
+	 * element by element.  The element by element result is modulus'd by 2 to ensure that the result is either 0 or 1.  Then, the result of these modulus operations is added 
+	 * together to get a (c) by (c) matrix.
+	 * 
+	 * @param passedInRows
+	 * @return 2D List; Returns a (c) by (c) matrix containing the results of the dot product.  
+	 */
+	public List< List<Integer> > dotProduct(List< List<Integer> > passedInRows)
+	{
+		List< List<Integer> > returnedMatrix = new ArrayList< List<Integer> >();
+		List<Integer> innerCurrentRow = new ArrayList<Integer>();
+		List<Integer> outerCurrentRow = new ArrayList<Integer>();
+		
+		int matrixResult = 0;
+		for(int i = 0; i < passedInRows.size(); i++)
+		{	
+			outerCurrentRow = passedInRows.get(i);
+			
+			//Every time an outerRow is processed, we want to create a new row in the returnedResults 2D list.
+			List<Integer> emptyList = new ArrayList<Integer>();
+			returnedMatrix.addAll(Arrays.asList(emptyList));
+			
+			/*
+			 * The idea behind both of these for loops of the same size is that each row (outerCurrentRow) needs to be multiplied 
+			 * against every other row (innerCurrentRow) to get the proper result.
+			 */
+			for(int j = 0; j < passedInRows.size(); j++)
+			{
+				innerCurrentRow = passedInRows.get(j);
+
+				matrixResult = 0;
+				//Do the math to get matrixResult, which is the variable that stores the result for the returnMatrix at a certain spot
+
+				for(int g = 0; g < innerCurrentRow.size(); g++)
+				{
+						matrixResult += outerCurrentRow.get(g) * innerCurrentRow.get(g);
+				}
+				
+				returnedMatrix.get(i).add(matrixResult);
+			}
+		}
+
+		return returnedMatrix;
+	}//end dotProduct method
+	
+	/**
+	 * This function checks to make sure that the matrix created by the dot product of the correct rows 
+	 * and the new random row contains the lambda values in the right place.  Any time there is a '1' in
+	 * the (c) by (c) rowset, the lambda value should be in that same position in the dotProductMatrix.  
+	 * 
+	 * @param currentRowSet - The 2D List of rows that contains rows that are currently known to be correct
+	 * @param dotProductMatrix - The dot product of currentRowSet
+	 * @return true(success) or false(failure)
+	 */
+	public boolean lambdaCheck(List< List<Integer> > currentRowSet, List< List<Integer> > dotProductMatrix)
+	{
+		
+		for(int g = 0; g < dotProductMatrix.size(); g++)
+		{
+			for(int a = 0; a < dotProductMatrix.get(g).size(); a++)
+			{
+				if(currentRowSet.get(g).get(a) == 1 && (a != g))
+				{
+					if(dotProductMatrix.get(g).get(a) != this.lambdaValue)
+					{
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * This function checks to make sure that the matrix created by the dot product of the correct rows 
+	 * and the new random row contains the mu values in the right place.  Any time there is a '0' in
+	 * the (c) by (c) rowset, the lambda value should be in that same position in the dotProductMatrix.  
+	 * 
+	 * @param currentRowSet - The 2D List of rows that contains rows that are currently known to be correct
+	 * @param dotProductMatrix - The dot product of currentRowSet
+	 * @return true(success) or false(failure)
+	 */
+	public boolean muCheck(List< List<Integer> > currentRowSet, List< List<Integer> > dotProductMatrix)
+	{
+		
+		for(int g = 0; g < dotProductMatrix.size(); g++)
+		{
+			for(int a = 0; a < dotProductMatrix.get(g).size(); a++)
+			{
+				if(currentRowSet.get(g).get(a) == 0 && (a != g))
+				{
+					if(dotProductMatrix.get(g).get(a) != this.muValue)
+					{
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+	
+	/**
 	 * 
 	 * @param currentRowSet The 2D List of rows that are currently known to be correct.
 	 * @return 2D List; Maximal set of rows
 	 */
 	public List< List<Integer> > buildRowList(List< List<Integer> > currentRowSet)
 	{
-		//Code to check for maximal row set here
+
+		List<Integer> randomRow = new ArrayList<Integer>();
+		List< List<Integer> > dotProductMatrix = new ArrayList< List<Integer> >();
 		
-		//End code that checks for maximal row set
+		randomRow = generateRandomRow();
+		currentRowSet.add(randomRow);
 		
-		//Base case; check to see if maximal row set has been built
-		if(maximalRowSetFound)
+		dotProductMatrix = dotProduct(currentRowSet);
+		FileHandler fileHandler = new FileHandler();
+		fileHandler.setFileName("maximalRowSetFile.txt");
+		
+		if(!lambdaCheck(currentRowSet, dotProductMatrix) || !muCheck(currentRowSet, dotProductMatrix))
 		{
-			FileHandler fileHandler = new FileHandler();
+			currentRowSet.remove(currentRowSet.size() - 1);
+		}
+		if(currentRowSet.size() == this.numOfVertices)
+		{
+			System.out.println("test");
 			fileHandler.write("OUTPUT MATRIX FROM SRGsolver.java: ");
 			fileHandler.writeln();
 			fileHandler.write("---------------------------------------------------------");
 			fileHandler.writeln(2);
-			fileHandler.write(currentRowSet);
-			
-			return currentRowSet;	
-		}	
-		List<Integer> randomRow = new ArrayList<Integer>();
-		randomRow = generateRandomRow();
-		
-		currentRowSet.add(randomRow);
-		
-		dotProduct(currentRowSet);
-		
-		//matrix check logic goes here
-			//check to see if random row works by checking matrix, if so add it to currentRowSet.  else throw away
-		//end matrix check logic
-		
+			fileHandler.write2DList(currentRowSet);
+			fileHandler.writeln(3);
+			dotProductMatrix = dotProduct(currentRowSet);
+			fileHandler.write2DList(dotProductMatrix);
+			return currentRowSet;
+		}
+
 		return buildRowList(currentRowSet);
+	}
+	
+	/**
+	 * 
+	 * @param currentRowSet The 2D List of rows that are currently known to be correct.
+	 * @return 2D List; Maximal set of rows
+	 */
+	public List< List<Integer> > buildRowList2(List< List<Integer> > currentRowSet)
+	{
+		while(!maximalRowSetFound)
+		{
+			if(currentRowSet.size() == this.numOfVertices)
+			{
+				FileHandler fileHandler = new FileHandler();
+				fileHandler.setFileName("maximalRowSetFile.txt");
+				fileHandler.write("OUTPUT MATRIX FROM SRGsolver.java: ");
+				fileHandler.writeln();
+				fileHandler.write("---------------------------------------------------------");
+				fileHandler.writeln(2);
+				fileHandler.write2DList(currentRowSet);
+				maximalRowSetFound = true;	
+				return currentRowSet;	
+			}	
+			else
+			{
+				List<Integer> randomRow = new ArrayList<Integer>();
+				List< List<Integer> > dotProductMatrix = new ArrayList< List<Integer> >();
+				
+				randomRow = generateRandomRow();
+				currentRowSet.add(randomRow);
+				
+				dotProductMatrix = dotProduct(currentRowSet);
+				FileHandler fileHandler = new FileHandler();
+				fileHandler.setFileName("maximalRowSetFile.txt");
+				
+				if(lambdaCheck(currentRowSet, dotProductMatrix) && muCheck(currentRowSet, dotProductMatrix))
+				{
+					
+					System.out.println("Lambda mu check worked");
+					
+					fileHandler.write("OUTPUT MATRIX FROM SRGsolver.java: ");
+					fileHandler.writeln();
+					fileHandler.write("---------------------------------------------------------");
+					fileHandler.writeln(2);
+					fileHandler.write2DList(currentRowSet);
+					fileHandler.writeln(3);
+					fileHandler.write2DList(dotProductMatrix);
+					
+					fileHandler.writeln(8);
+					
+				}
+				else
+				{
+					currentRowSet.remove(currentRowSet.size() - 1);
+				}
+			}
+		}
+		return currentRowSet;
+
 	}
 
 }//end public class SRGsolver
