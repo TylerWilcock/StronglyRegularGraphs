@@ -210,7 +210,7 @@ public class FileHandler
 	}
 	
 	/**
-	 * This method write's a line onto the file.
+	 * This method writes a line onto the file.
 	 * 
 	 * @param <T>
 	 * @param Information that will be written onto file
@@ -229,6 +229,56 @@ public class FileHandler
 		catch (IOException exception) 
 		{
 			System.err.println("IOException encountered in file " + fileName + " in method: write.");
+			exception.printStackTrace();
+			System.exit(1);
+		}
+		return false;
+	}
+	
+	/**
+	 * This method writes a space onto the file.
+	 * 
+	 * @return true(success) or false(failure)
+	 */
+	public boolean writeSpace()
+	{
+		try 
+		{
+			PrintWriter writer = new PrintWriter(new FileWriter(fileName, true));
+			writer.print(" ");
+			writer.close();
+			return true;
+		} 
+		catch (IOException exception) 
+		{
+			System.err.println("IOException encountered in file " + fileName + " in method write.");
+			exception.printStackTrace();
+			System.exit(1);
+		}
+		return false;
+	}
+	
+	/**
+	 * This method writes (n) number of spaces onto the file.
+	 * 
+	 * @param Integer Number of spaces to write onto the file.
+	 * @return true(success) or false(failure)
+	 */
+	public boolean writeSpace(int numOfSpaces)
+	{
+		try 
+		{
+			PrintWriter writer = new PrintWriter(new FileWriter(fileName, true));
+			for(int i = 0; i < numOfSpaces; i++)
+			{
+				writer.print(" ");
+			}
+			writer.close();
+			return true;
+		} 
+		catch (IOException exception) 
+		{
+			System.err.println("IOException encountered in file " + fileName + " in method write.");
 			exception.printStackTrace();
 			System.exit(1);
 		}
