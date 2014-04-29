@@ -9,7 +9,7 @@ public class RandomRowTest
 
 	public static void main(String args[])
 	{
-		SRGsolver srgSolver = new SRGsolver(5, 2, 0, 1);
+		SRGsolver srgSolver = new SRGsolver("RandomRowTest.txt", 5, 2, 0, 1);
 		
 		int oneSpotCounter = 0, twoSpotCounter = 0, threeSpotCounter = 0, fourSpotCounter = 0, fiveSpotCounter = 0;
 		long totalCounter = 0;
