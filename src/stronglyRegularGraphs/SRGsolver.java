@@ -3,7 +3,6 @@ package stronglyRegularGraphs;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DateFormat;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,28 +37,31 @@ import java.util.Random;
  */
 
 /*
- * Other TODO: Implement program run time counter.  Hours, minutes, seconds.  Write to text file
- * 					-Figure out any other changes to the text file writing
- * 					-Redo current text files so the above is included
+ * Other TODO: 
  * 
  * 			   Check generated test files against the graphs I solved on paper to confirm algorithm accuracy
  * 
- * 			   Create Excel file containing 100% complete list of found SRGs
- * 					-Include whether or not I have built them using green/red boxes (or something that looks nice)
- * 
  * 				Parallelize slow parts of the code using ForkJoin
+ * 
+ * 				Ensure that all comments are up to date
+ * 
+ * 				In Main.java, organize all the graphs.   
+ * 					-By sections (cocktail party graphs, bipartite, tripartite, etc..)
+ * 					-By number of vertices
  */
 
 public class SRGsolver 
 {
+	private boolean firstRowKnown;
 	private int numOfVertices, degree, lambdaValue, muValue;
 	private boolean maximalRowSetFound = false;
 	private String fileName;
 	
 	/**
 	 * Initializes the class variables containing the file name to write to, number of vertices in the SRG, 
-	 * the degree value (which is the number of edges connected to each point), the lambda value (number of edges shared with each ponts adjacent vertices),
-	 * and the mu value (the number of edges a vertex shares with it's non adjacent vertices).
+	 * the degree value (which is the number of edges connected to each point), 
+	 * the lambda value (number of edges shared with each ponts adjacent vertices),
+	 * and the mu value (the number of edges a vertex shares with it's non adjacent vertices). 
 	 * 
 	 * @param fileName
 	 * @param numOfVertices
@@ -79,20 +81,35 @@ public class SRGsolver
 	/**
 	 * This function generates a List object that has (degree) one's randomly placed in a row of (numOfVertices), where the other spaces are 0's. 
 	 * 
+	 * @param rowsetIsEmpty A true or false variable that flags whether or not the calling row set is empty.
 	 * @return List Randomly generated row of 1's and 0's 
 	 */
-	public List<Integer> generateRandomRow()
+	public List<Integer> generateRandomRow(boolean rowsetIsEmpty)
 	{
-		int[] tempValueArray = new int[numOfVertices];
 		List<Integer> returnedRow = new ArrayList<Integer>(numOfVertices);
-		List<Integer> placedIndices = new ArrayList<Integer>(numOfVertices);
-		
+		List<Integer> randomNumbers = new ArrayList<Integer>(numOfVertices);
 		Random rand = new Random();
 		int oneCounter = 0;
 		int onesLeft = this.degree;
+		int startingPoint = 0;
+		
+		/*
+		 * If the 'currentRowset' 2D List currently has no rows at the time of this function call, we mathematically know that there needs to be '0' in the first
+		 * position.  This also means that if this is the case, we need to change the starting point to skip the first position in the array so a number
+		 * is not placed over it. 
+		 */
+		if(rowsetIsEmpty)
+		{
+			returnedRow.add(0);
+			startingPoint = 1;
+		}
+		else
+		{
+			startingPoint = 0;
+		}
 		
 		//Generate (numOfVertices) random numbers
-		for(int i = 0; i < numOfVertices; i++)
+		for(int i = startingPoint; i < numOfVertices; i++)
 		{
 			int randomNumber;
 			
@@ -124,58 +141,27 @@ public class SRGsolver
 					}
 				}
 			}
+			randomNumbers.add(randomNumber);
 			
-			/*
-			 * To make the row generation truly random, we must also randomize the placement of the 
-			 * random number we generated in the previous step.  This is accomplished by keeping track
-			 * of spots that are already placed in List object 'placedIndices'.  A random place is generated,
-			 * and is checked against the values in the 'placedIndices' List.  If it doesn't match any of those
-			 * values, the previously generated random number is placed at the randomly generated index.
-			 */
-			boolean numberIsPlaced = false;
-			
-			while(!numberIsPlaced)
-			{
-				int randomPlace = rand.nextInt(numOfVertices);
-				if(!placedIndices.isEmpty())
-				{
-					boolean indexNotAlreadyUsed = true;
-					for(int x = 0; x < placedIndices.size(); x++)
-					{
-						if(randomPlace == placedIndices.get(x))
-						{
-							indexNotAlreadyUsed = false;
-						}
-					}
-					if(indexNotAlreadyUsed)
-					{
-						tempValueArray[randomPlace] = randomNumber;
-						placedIndices.add(randomPlace);
-						numberIsPlaced = true;
-					}
-				}
-				else
-				{
-					tempValueArray[randomPlace] = randomNumber;
-					placedIndices.add(randomPlace);
-					numberIsPlaced = true;	
-				}
-			}
 		}
+		/*
+		 * To ensure that the numbers in the row are truly random, a random starting position is generated.  The numbers generated above
+		 * are then sequentially placed into the returned row starting from this position, resetting to the beginning if the end is reached.
+		 */
+		int randomStartingPosition = rand.nextInt(randomNumbers.size());
 		
-	   /*
-		* Move all the values stored in the array into a List object.
-		* While it was easier to work with an array in the previous steps,
-		* we want to return a List object as the rest of the code works with
-		* List objects.
-		*/
-		for(int k = 0; k < tempValueArray.length; k++)
+		for(int j = 0; j < randomNumbers.size(); j++)
 		{
-			returnedRow.add(tempValueArray[k]);
+			if(randomStartingPosition > randomNumbers.size() - 1)
+			{
+				randomStartingPosition = 1;
+			}
+			returnedRow.add(randomNumbers.get(randomStartingPosition));
+			randomStartingPosition++;
 		}
 		
 		return returnedRow;
-	}//end generateRandomRow method method
+	}//end generateRandomRow method
 	
 	/**
 	 * This function generates a random row in the form of a List object, using the current known rows in 'currentRowSet' to add the first 
@@ -194,26 +180,25 @@ public class SRGsolver
 	 */
 	public List<Integer> generateRandomRowFromCurrentRowSet(List< List<Integer> > currentRowSet)
 	{	
-		int[] tempValueArray = new int[numOfVertices];
+		List<Integer> randomNumbers = new ArrayList<Integer>(numOfVertices);
 		List<Integer> returnedRow = new ArrayList<Integer>(numOfVertices);
-		List<Integer> placedIndices = new ArrayList<Integer>(numOfVertices);
 		
 		Random rand = new Random();
 		int oneCounter = 0;
 		int onesLeft = this.degree;
 		int numbersLeftToPlace = numOfVertices;
+		int startingPoint = 0;
 		
 		//We already know the first values of this random row based on the corresponding column from currentRowSet, so this for loop adds those numbers in.
 		//Example: if row 1 is: 0, 1, 0, 1, 0 - We know that the first number in row 2 is a '1'.
 		for(int z = 0; z < currentRowSet.size(); z++)
 		{
-			tempValueArray[z] = currentRowSet.get(z).get(currentRowSet.size());
-			if(tempValueArray[z] == 1)
+			returnedRow.add(currentRowSet.get(z).get(currentRowSet.size()));
+			if(returnedRow.get(z) == 1)
 			{
 				oneCounter++;
 				onesLeft--;
 			}
-			placedIndices.add(z);
 			numbersLeftToPlace--;
 		}
 		
@@ -223,14 +208,15 @@ public class SRGsolver
 		* Row 2, Column 2 (Remember counting starts from 0).
 		* This means that in that spot, it is in the diagonal and therefore must be a '0'.
 		*
-		* foundRowCounter points to this spot, so I use that to set the value to 0.
+		* The size of the currentRowSet points to this spot, so that is used to set the value to 0.
 		*/
-		tempValueArray[currentRowSet.size()] = 0;
-		placedIndices.add(currentRowSet.size());
+		returnedRow.add(currentRowSet.size(), 0);
 		numbersLeftToPlace--;
 		
+		startingPoint = this.numOfVertices - numbersLeftToPlace;
+		
 		//Generate (numOfVertices) random numbers
-		for(int i = 0; i < numbersLeftToPlace; i++)
+		for(int i = startingPoint; i < this.numOfVertices; i++)
 		{
 			int randomNumber;
 			
@@ -262,55 +248,23 @@ public class SRGsolver
 					}
 				}
 			}
+			randomNumbers.add(randomNumber);
 			
-			
-			/*
-			 * To make the row generation truly random, we must also randomize the placement of the 
-			 * random number we generated in the previous step.  This is accomplished by keeping track
-			 * of spots that are already placed in List object 'placedIndices'.  A random place is generated,
-			 * and is checked against the values in the 'placedIndices' List.  If it doesn't match any of those
-			 * values, the previously generated random number is placed at the randomly generated index.
-			 */
-			boolean numberIsPlaced = false;
-			
-			while(!numberIsPlaced)
-			{
-				int randomPlace = rand.nextInt(numOfVertices);
-				if(!placedIndices.isEmpty())
-				{
-					boolean indexNotAlreadyUsed = true;
-					for(int x = 0; x < placedIndices.size(); x++)
-					{
-						if(randomPlace == placedIndices.get(x))
-						{
-							indexNotAlreadyUsed = false;
-						}
-					}
-					if(indexNotAlreadyUsed)
-					{
-						tempValueArray[randomPlace] = randomNumber;
-						placedIndices.add(randomPlace);
-						numberIsPlaced = true;
-					}
-				}
-				else
-				{
-					tempValueArray[randomPlace] = randomNumber;
-					placedIndices.add(randomPlace);
-					numberIsPlaced = true;	
-				}
-			}
 		}
-		
 		/*
-		* Move all the values stored in the array into a List object.
-		* While it was easier to work with an array in the previous steps,
-		* we want to return a List object as the rest of the code works with
-		* List objects.
-		*/
-		for(int k = 0; k < tempValueArray.length; k++)
+		 * To ensure that the numbers in the row are truly random, a random starting position is generated.  The numbers generated above
+		 * are then sequentially placed into the returned row starting from this position, resetting to the beginning if the end is reached.
+		 */
+		int randomStartingPosition = rand.nextInt(randomNumbers.size());
+		
+		for(int j = 0; j < randomNumbers.size(); j++)
 		{
-			returnedRow.add(tempValueArray[k]);
+			if(randomStartingPosition > randomNumbers.size() - 1)
+			{
+				randomStartingPosition = 1;
+			}
+			returnedRow.add(randomNumbers.get(randomStartingPosition));
+			randomStartingPosition++;
 		}
 		
 		return returnedRow;
@@ -364,14 +318,15 @@ public class SRGsolver
 	
 	/**
 	 * This function checks to make sure that the matrix created by the dot product of the correct rows 
-	 * and the new random row contains the lambda values in the right place.  Any time there is a '1' in
-	 * the (c) by (c) row set, the lambda value should be in that same position in the dotProductMatrix.  
+	 * and the new random row contains the lambda and mu values in the right place.  Any time there is a '1' in
+	 * the (c) by (c) row set, the lambda value should be in that same position in the dotProductMatrix.  Conversely,
+	 * anytime there is a '0' in the (c) by (c) row set, the mu value should be in that same position in the dotProductMatrix. 
 	 * 
 	 * @param currentRowSet - The 2D List of rows that contains rows that are currently known to be correct
 	 * @param dotProductMatrix - The dot product of currentRowSet
 	 * @return true(success) or false(failure)
 	 */
-	public boolean lambdaCheck(List< List<Integer> > currentRowSet, List< List<Integer> > dotProductMatrix)
+	public boolean lambdaMuCheck(List< List<Integer> > currentRowSet, List< List<Integer> > dotProductMatrix)
 	{
 		
 		for(int g = 0; g < dotProductMatrix.size(); g++)
@@ -381,6 +336,13 @@ public class SRGsolver
 				if(currentRowSet.get(g).get(a) == 1 && (a != g))
 				{
 					if(dotProductMatrix.get(g).get(a) != this.lambdaValue)
+					{
+						return false;
+					}
+				}
+				else if(currentRowSet.get(g).get(a) == 0 && (a != g))
+				{
+					if(dotProductMatrix.get(g).get(a) != this.muValue)
 					{
 						return false;
 					}
@@ -429,6 +391,7 @@ public class SRGsolver
 	 */
 	public int testNumberOfDigits(int passedNumber)
 	{
+		if(passedNumber == 0) return 1;
 		double testNumberOfDigits = passedNumber / 10;
 		if(testNumberOfDigits < 1)
 		{
@@ -622,9 +585,16 @@ public class SRGsolver
 				}
 				
 				fileHandler.write(twoDimensionalList.get(k).get(z));
-				fileHandler.writeSpace();
+
+				if(testNumberOfDigits(twoDimensionalList.get(k).get(z)) == 1)
+				{
+					fileHandler.writeSpace();
+				}
 				fileHandler.write("|");
-				fileHandler.writeSpace();
+				if(testNumberOfDigits(twoDimensionalList.get(k).get(z)) == 1 || testNumberOfDigits(twoDimensionalList.get(k).get(z)) == 2)
+				{
+					fileHandler.writeSpace();
+				}
 			}
 
 			/* Write line of '='s between each row */
@@ -634,6 +604,61 @@ public class SRGsolver
 				fileHandler.write("=");
 			}
 					
+		}
+	}
+	
+	/**
+	 * This function handles the amount of backtracking that occurs.  In some cases, where the graph completes
+	 * (x)% of the way, we may not want to backtrack all the way to an empty row set, as there is good reason to
+	 * believe that the beginning rows likely were okay, and it was the rows added later on that led to errors.
+	 * To accommodate this, this function will allow you to specify how many rows in the row set you want to keep.
+	 * 
+	 * @param currentRowSet 2D List of rows found
+	 * @param numOfRowsToKeep Integer value containing the number of rows to keep in the rowset
+	 * @return returnedRowSet Row set cut down to the listed percentage
+	 */
+	public List< List<Integer> > backtrackRows(int numRowsToKeep, List< List<Integer> > currentRowSet)
+	{	
+		if(numRowsToKeep == 0)
+		{
+			currentRowSet.clear();
+			currentRowSet.add(generateRandomRow(true));
+			return currentRowSet;
+		}
+		
+		while(currentRowSet.size() != numRowsToKeep)
+		{
+			currentRowSet.remove(currentRowSet.size() - 1);
+		}
+
+		return currentRowSet;
+	}
+	
+	/**
+	 * This function calculates the number of rows in the row set in the following manner.  It uses the passed in
+	 * number of rows found, and divides that value by the number of vertices (the class variable).  If the resulting
+	 * percentage is greater than or equal to the threshold value passed into the method, the percentToKeep value is used
+	 * to determine the number of rows to keep.
+	 * 
+	 * @param numberOfRowsFound - Integer value of number of rows found by the row set
+	 * @param percentToKeep - Percentage of rows to keep
+	 * @param percentThreshold - Percentage threshold that needs to obtained to keep the (x) number of rows
+	 * @return
+	 */
+	public int calculateNumberOfRowsToKeep(int numberOfRowsFound, double percentToKeep, double percentThreshold)
+	{
+		double percentOfMaxRowsFound = ((double)numberOfRowsFound / (double)this.numOfVertices) * 100.0;
+		//If the percent of rows found is greater than or equal to the specified threshold, keep the 
+		//'percentToKeep' percentage number of rows.
+		if(percentOfMaxRowsFound >= percentThreshold)
+		{
+			int numberOfRowsToKeep = (int) Math.floor(numberOfRowsFound * (percentToKeep / 100));
+			return numberOfRowsToKeep;
+		}
+		else
+		{
+			//Otherwise if the threshold value is not met, start the row set all the way from the beginning.
+			return 0;
 		}
 	}
 	
@@ -654,7 +679,7 @@ public class SRGsolver
 		
 		dotProductMatrix = dotProduct(currentRowSet);
 		
-		if(!lambdaCheck(currentRowSet, dotProductMatrix) || !muCheck(currentRowSet, dotProductMatrix))
+		if(!lambdaMuCheck(currentRowSet, dotProductMatrix) || !muCheck(currentRowSet, dotProductMatrix))
 		{
 			currentRowSet.remove(currentRowSet.size() - 1);
 		}
@@ -727,41 +752,43 @@ public class SRGsolver
 				System.out.println("           Hours:   " + hours);
 				System.out.println("           Minutes: " + minutes);
 				System.out.println("           Seconds: " + seconds);
+				return currentRowSet;
 			}	
+
+			List<Integer> randomRow = new ArrayList<Integer>();
+				
+			randomRow = generateRandomRowFromCurrentRowSet(currentRowSet);
+			currentRowSet.add(randomRow);
+				
+			dotProductMatrix = dotProduct(currentRowSet);
+						
+//			if(lambdaCheck(currentRowSet, dotProductMatrix) && muCheck(currentRowSet, dotProductMatrix))
+//			{
+//				runCounterWithoutRow = 0;
+//				System.out.println("Lambda and mu row checks passed.  Row " + currentRowSet.size() + " found.");
+//			}
+			if(lambdaMuCheck(currentRowSet, dotProductMatrix))
+			{
+				runCounterWithoutRow = 0;
+				System.out.println("Lambda and mu row checks passed.  Row " + currentRowSet.size() + " found.");
+			}
 			else
 			{
-				List<Integer> randomRow = new ArrayList<Integer>();
-				
-				randomRow = generateRandomRowFromCurrentRowSet(currentRowSet);
-				//randomRow = generateRandomRow();
-				currentRowSet.add(randomRow);
-				
-				dotProductMatrix = dotProduct(currentRowSet);
-						
-				if(lambdaCheck(currentRowSet, dotProductMatrix) && muCheck(currentRowSet, dotProductMatrix))
-				{
-					runCounterWithoutRow = 0;
-					System.out.println("Lambda and mu row checks passed.  Row " + currentRowSet.size() + " found.");
-				}
-				else
-				{
-					currentRowSet.remove(currentRowSet.size() - 1);
-					runCounterWithoutRow++;
-				}
-				
-				if(runCounterWithoutRow == 900000)
-				{
-					System.out.println("\n\n\n\n Backtracking... \n\n\n\n");
-					while(currentRowSet.size() != 0)
-					{
-						currentRowSet.remove(currentRowSet.size() - 1);
-					}
-					runCounterWithoutRow = 0;
-				}
+				currentRowSet.remove(currentRowSet.size() - 1);
+				runCounterWithoutRow++;
 			}
-		}
+				
+			if(runCounterWithoutRow == 1000000)
+			{
+				System.out.println("\n\n\n Backtracking... \n\n\n");
+					
+				runCounterWithoutRow = 0;
+				currentRowSet = backtrackRows(0, currentRowSet);
+			}
+		}//end while(!maximalRowSetFound)
+		
 		return currentRowSet;
 
-	}
+	}//end buildRowListWhileLoop() method
 
 }//end public class SRGsolver
